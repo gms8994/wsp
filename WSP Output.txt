@@ -89,8 +89,9 @@ on createSrcPlaylist(songs, r_weight)
 		on getTrack()
 			
 			if track_index < track_count then
-				-- set thisTrack to best_track
-				-- set played_date to played date of best_track
+				set thisTrack to best_track
+				display dialog (thisTrack as string)
+				-- set played_date to played date of thisTrack
 				set track_index to track_index + 1
 				set best_track to track_index of tracks
 				set best_pressure to (elasped_baseDate - played_date) * rating_weight
@@ -177,7 +178,7 @@ tell application "iTunes"
 		
 		if (count of playlist_songs) > 0 then
 			
-			set new_src_playlist to createSrcPlaylist(playlist_songs, item index of SONG_SRC_WEIGHTS)
+			set new_src_playlist to my createSrcPlaylist(playlist_songs, item index of SONG_SRC_WEIGHTS)
 			copy new_src_playlist to end of src_playlists
 		end if
 		
@@ -233,12 +234,12 @@ tell application "iTunes"
 	
 	
 	-- shuffle - this may not work, ran across it on Doug's Applescripts
-	tell playlist OUTPUT_PLAYLIST
-		repeat 5 times
-			set shuffle to false
-			set shuffle to true
-		end repeat
-	end tell
+	-- tell playlist OUTPUT_PLAYLIST
+	-- repeat 5 times
+	-- set shuffle to false
+	-- set shuffle to true
+	-- 		end repeat
+	-- end tell
 	
 	set fixed indexing to old_i -- restore fixed indexing to original state
 	
