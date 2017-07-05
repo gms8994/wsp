@@ -21,33 +21,33 @@
 
 
 -- user control parameters
-property OUTPUT_SIZE : 950					-- amount of songs to output, in MB
-property UNTRIED_SONG_FRACTION : 0.1		-- fraction of output to set to untried songs
-property OUTPUT_PLAYLIST : "WSP Output"		-- playlist to place output tracks onto
-property SONG_SRC_WEIGHTS : {1.0, 0.1, 0.05, 0.03333333333333333333333333333333, 0.025, 0.02, 0.01666666666666666666666666666667, 0.01428571428571428571428571428571, 0.0125, 0.01111111111111111111111111111111, 0.01}
+property OUTPUT_SIZE : 950 -- amount of songs to output, in MB
+property UNTRIED_SONG_FRACTION : 0.1 -- fraction of output to set to untried songs
+property OUTPUT_PLAYLIST : "WSP Output" -- playlist to place output tracks onto
+property SONG_SRC_WEIGHTS : {1.0, 0.1, 0.05, 0.033333333333, 0.025, 0.02, 0.016666666667, 0.014285714286, 0.0125, 0.011111111111, 0.01}
 
 
 -- advanced control parameters; not much reason to adjust these
-property SONG_SRC_PLAYLISTS : {"WSP - 5 Star","WSP - 4.5 Star","WSP - 4 Star","WSP - 3.5 Star","WSP - 3 Star","WSP - 2.5 Star","WSP - 2 Star","WSP - 1.5 Star","WSP - 1 Star","WSP - 0.5 Star","WSP - 0 Star"} 		-- prefix for aseembling names of playlists of src songs, by rating, sorted by last played date
-property UNTRIED_SONG_PLAYLIST : "WSP Untried"			-- playlist containing untried songs, randomized
-property DATE_PAST_OFFSET : 365.25 * 9.0				-- amount to shift play and skip dates into the past, in days
+property SONG_SRC_PLAYLISTS : {"WSP - 5 Star", "WSP - 4.5 Star", "WSP - 4 Star", "WSP - 3.5 Star", "WSP - 3 Star", "WSP - 2.5 Star", "WSP - 2 Star", "WSP - 1.5 Star", "WSP - 1 Star", "WSP - 0.5 Star", "WSP - 0 Star"} -- prefix for aseembling names of playlists of src songs, by rating, sorted by last played date
+property UNTRIED_SONG_PLAYLIST : "WSP Untried" -- playlist containing untried songs, randomized
+property DATE_PAST_OFFSET : 365.25 * 9.0 -- amount to shift play and skip dates into the past, in days
 
 
 -- set up dates for script
-set scriptDate to (current date)								-- get current date
-set elasped_baseDate to scriptDate - (DATE_PAST_OFFSET days)	-- elapsed time is currentDate - (playedDate + pastOffset) = (currentDate - pastOffset) - playedDate
-		
-		
-		
+set scriptDate to (current date) -- get current date
+set elasped_baseDate to scriptDate - (DATE_PAST_OFFSET * days) -- elapsed time is currentDate - (playedDate + pastOffset) = (currentDate - pastOffset) - playedDate
+
+
+
 
 
 
 -- function to compute rating corresponding to time since last attempt
-on CalcElaspedEquivRating( attempted_date, last_attempted_date )
+on CalcElaspedEquivRating(attempted_date, last_attempted_date)
 	
 	-- compute time since last attempt
-	set unadj_lastDate to last_attempted_date + (DATE_PAST_OFFSET days)				-- add back in past-shifitng date offset
-	set elapsed_time to attempted_date - unadj_lastDate						-- elapsed time, in seconds
+	set unadj_lastDate to last_attempted_date + (DATE_PAST_OFFSET * days) -- add back in past-shifitng date offset
+	set elapsed_time to attempted_date - unadj_lastDate -- elapsed time, in seconds
 	
 	-- compute rating that corresponds to actual time interval since last attempt
 	set attempted_rating to 101 - elapsed_time / (3600 * 24 * RATING_REPEAT_INTERVAL)
@@ -55,7 +55,7 @@ on CalcElaspedEquivRating( attempted_date, last_attempted_date )
 	-- check bounds
 	if attempted_rating < 1 then
 		set attempted_rating to 1
-	else if attempted_rating > 100
+	else if attempted_rating > 100 then
 		set attempted_rating to 100
 	end if
 	
@@ -68,51 +68,55 @@ end CalcElaspedEquivRating
 
 
 -- class for source playlist
-on createSrcPlaylist( songs, r_weight )
-
+on createSrcPlaylist(songs, r_weight)
+	
 	script SrcPlaylist
-		property tracks : null							-- tracks in this source playlist
-		property track_index : null						-- where in the track list am I?
-		property rating_weight : null					-- rating weight for computing pressures; pressure ~ (time since last attempt) / (101 - rating)
-		property best_pressure : null					-- highest pressure I've got
-		property best_track : null						-- track with that highest pressure
-       
-	   
+		property tracks : null -- tracks in this source playlist
+		property track_index : null -- where in the track list am I?
+		property rating_weight : null -- rating weight for computing pressures; pressure ~ (time since last attempt) / (101 - rating)
+		property best_pressure : null -- highest pressure I've got
+		property best_track : null -- track with that highest pressure
+		property track_count : null -- number of tracks
+		
+		
 		-- what is the highest pressure song I've got?  May not need this if I can access fields directly.
 		on getBestPressure()
 			return best_pressure
 		end getBestPressure
-       
-	   
+		
+		
 		-- get highest pressure track
 		on getTrack()
 			
-			if track_index < count of tracks then
-				set thisTrack to best_track
+			if track_index < track_count then
+				-- set thisTrack to best_track
+				-- set played_date to played date of best_track
 				set track_index to track_index + 1
 				set best_track to track_index of tracks
-				set best_pressure to (elasped_baseDate - played date of best_track) * rating_weight
+				set best_pressure to (elasped_baseDate - played_date) * rating_weight
 				
 				return thisTrack
 			else
 				set best_pressure to 0
 				return best_track
-			end if 
+			end if
 			
 		end getTrack
-
-
+	end script
+	
+	
 	-- constructor...I think...had to Google how classes work in Applescript
 	tell SrcPlaylist
-       
-	   set tracks to songs
-	   set track_index to 1
-	   set rating_weigth to r_weight
-	   set best_track to item 1 of tracks
-	   set best_pressure to (elasped_baseDate - played date of best_track) * rating_weight
-	   
+		
+		set tracks to songs
+		set track_count to count of songs
+		set track_index to 1
+		set rating_weigth to r_weight
+		set best_track to item 1 of tracks
+		-- set best_pressure to (elasped_baseDate - played date of best_track) * rating_weight
+		
 	end tell
-   
+	
 	return SrcPlaylist
 	
 end createSrcPlaylist
@@ -129,32 +133,31 @@ end createSrcPlaylist
 tell application "iTunes"
 	
 	set chosen_songs to {}
-	set output_size to 0
-	set total_size_target to OUTPUT_SIZE * 1024 * 1024				-- convert output size to bytes
-		
-	set old_i to fixed indexing		-- enable fixed indexing
+	set OUTPUT_SIZE to 0
+	set total_size_target to OUTPUT_SIZE * 1024 * 1024 -- convert output size to bytes
+	
+	set old_i to fixed indexing -- enable fixed indexing
 	set fixed indexing to true
-			
+	
 	-- start by adding untried songs
 	set untried_size_target to total_size_target * UNTRIED_SONG_FRACTION
 	
-	if ((exists user playlist UNTRIED_SONG_PLAYLIST) and ((count tracks) of user UNTRIED_SONG_PLAYLIST clear_counts is not 0)) then
+	if ((exists user playlist UNTRIED_SONG_PLAYLIST) and ((count tracks) of user playlist UNTRIED_SONG_PLAYLIST is not 0)) then
 		set input to get every track of user playlist UNTRIED_SONG_PLAYLIST
 		if (input is not {}) then
-
+			
 			
 			-- iterate through tracks trhat have been played or skipped
 			repeat with aTrack in input
-			
-						repeat with theTrack in input
-				if (output_size + (size of aTrack) > untried_size_target * 1024 * 1024) then
+				
+				if (OUTPUT_SIZE + (size of aTrack) > untried_size_target * 1024 * 1024) then
 					exit repeat
 				else
-					set output_size to output_size + (size of aTrack)
+					set OUTPUT_SIZE to OUTPUT_SIZE + (size of aTrack)
 					copy aTrack to the end of chosen_songs
 				end if
 			end repeat
-
+			
 		end if
 	end if
 	
@@ -164,54 +167,55 @@ tell application "iTunes"
 	
 	-- begin by loading rating source playlists
 	set src_playlists to {}
-
+	
 	repeat with index from 1 to count of SONG_SRC_PLAYLISTS
-	
+		
 		set playlist_name to item index of SONG_SRC_PLAYLISTS
-	
+		
 		-- get tracks in rating playlist (if none, add empty list)
 		set playlist_songs to get every track of user playlist playlist_name
 		
-		if count of playlist_songs > 0 then
-		
-			set new_src_playlist to createSrcPlaylist( playlist_songs, item index of SONG_SRC_WEIGHTS )
+		if (count of playlist_songs) > 0 then
+			
+			set new_src_playlist to createSrcPlaylist(playlist_songs, item index of SONG_SRC_WEIGHTS)
 			copy new_src_playlist to end of src_playlists
 		end if
 		
 	end repeat
 	
-
+	
 	-- add songs until full 
-	repeat while output_size < total_size_target
-	
-			-- find track with most pressure
-			set best_src_playlist = item 1 of src_playlists
+	repeat while OUTPUT_SIZE < total_size_target
+		
+		-- find track with most pressure
+		set best_src_playlist to item 1 of src_playlists
+		
+		repeat with index from 2 to count of src_playlists
 			
-			repeat with index from 2 to count of src_playlists
+			set src_playlist to item index of src_playlists
 			
-				set src_playlist to item index of src_playlists
-				
-				if best_pressure of src_playlist > best_pressure of best_src_playlist then
-					set best_src_playlist to src_playlist
-				end if
-			end repeat
-			
-
-			-- now add track to chosen songs if room allows
-			set nextTrack to best_track of best_src_playlist
-			
-			-- see if limit reached
-			if output_size + size of nextTrack > total_size_target
-				exit repeat
-				
-			-- add track
-			copy nextTrack to end of chosen_songs
-			set output_size to output_size + size of nextTrack
-	
+			if best_pressure of src_playlist > best_pressure of best_src_playlist then
+				set best_src_playlist to src_playlist
+			end if
+		end repeat
+		
+		
+		-- now add track to chosen songs if room allows
+		set nextTrack to best_track of best_src_playlist
+		
+		-- see if limit reached
+		if OUTPUT_SIZE + (size of nextTrack) > total_size_target then
+			exit repeat
+		end if
+		
+		-- add track
+		copy nextTrack to end of chosen_songs
+		set OUTPUT_SIZE to OUTPUT_SIZE + (size of nextTrack)
+		
 	end repeat
 	
 	
-
+	
 	-- clear output playlist
 	if user playlist OUTPUT_PLAYLIST exists then
 		try
@@ -236,6 +240,6 @@ tell application "iTunes"
 		end repeat
 	end tell
 	
-	set fixed indexing to old_i			-- restore fixed indexing to original state
+	set fixed indexing to old_i -- restore fixed indexing to original state
 	
 end tell
