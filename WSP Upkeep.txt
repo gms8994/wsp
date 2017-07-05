@@ -85,17 +85,13 @@ tell application "iTunes"
 			set old_i to fixed indexing -- enable fixed indexing
 			set fixed indexing to true
 			
-			-- iterate through tracks trhat have been played or skipped
+			-- iterate through tracks that have been played or skipped
 			repeat with aTrack in input
 				
 				-- fetch track attempt date info
 				set pDate to played date of aTrack
 				set sDate to skipped date of aTrack
-				
-				if pDate > modDateThresh and sDate > modDateThresh then -- both played and skipped - weirdness (or a new song), so don't adjust rating
-				end if
-				
-				
+
 				if pDate > modDateThresh then -- song was played
 					
 					if sDate < BLANK_DATE then -- first attempt, played!
