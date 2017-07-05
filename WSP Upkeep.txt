@@ -46,7 +46,11 @@ property BLANK_DATE : date "Monday, January 1, 1990 at 12:00:00 AM" -- date cuto
 on CalcElaspedEquivRating(attempted_date, last_attempted_date)
 	
 	-- compute time since last attempt
-	set unadj_lastDate to last_attempted_date + (DATE_PAST_OFFSET * days) -- add back in past-shifitng date offset
+	if (last_attempted_date as string) is equal to "missing value" then
+		set unadj_lastDate to (current date) + (DATE_PAST_OFFSET * days)
+	else
+		set unadj_lastDate to last_attempted_date + (DATE_PAST_OFFSET * days) -- add back in past-shifitng date offset
+	end if
 	set elapsed_time to attempted_date - unadj_lastDate -- elapsed time, in seconds
 	
 	-- compute rating that corresponds to actual time interval since last attempt
@@ -100,7 +104,8 @@ tell application "iTunes"
 						
 					else if sDate ≤ modDateThresh then -- legit play
 						
-						set new_r to CalcPlayWeight(pDate, sDate) of me -- compute rating corresponding to time since last attempt
+						set new_r to CalcElaspedEquivRating(pDate, sDate) of me -- compute rating corresponding to time since last attempt
+						set attempted_rating to new_r
 						
 						-- if better than current, increase rating
 						set r to rating of aTrack
@@ -122,7 +127,8 @@ tell application "iTunes"
 						
 					else -- legit skip
 						
-						set new_r to CalcPlayWeight(sDate, pDate) of me -- compute rating corresponding to time since last attempt
+						set new_r to CalcElaspedEquivRating(sDate, pDate) of me -- compute rating corresponding to time since last attempt
+						set attempted_rating to new_r
 						
 						-- if worse than current, decrease rating
 						set r to rating of aTrack
@@ -145,7 +151,11 @@ tell application "iTunes"
 					set most_recent_attempt to sDate
 				end if
 				
-				set adj_attempted_date to most_recent_attempt - (DATE_PAST_OFFSET * days)
+				if (most_recent_attempt as string) is equal to "missing value" then
+					set adj_attempted_date to (current date) - (DATE_PAST_OFFSET * days)
+				else
+					set adj_attempted_date to most_recent_attempt - (DATE_PAST_OFFSET * days)
+				end if
 				
 				set played date of aTrack to adj_attempted_date
 				set skipped date of aTrack to adj_attempted_date
