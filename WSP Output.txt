@@ -14,7 +14,7 @@
 -- IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 -- This script selects songs with the most pressure on them and assembles them into an output playlist
--- At the moment, no randomness is added. This in theory mnight elad to songs with simialr ratings clumping together. We shall see!
+-- At the moment, no randomness is added. This in theory mnight lead to songs with similar ratings clumping together. We shall see!
 
 
 
@@ -34,8 +34,8 @@ property DATE_PAST_OFFSET : 365.25 * 9.0 -- amount to shift play and skip dates 
 
 
 -- set up dates for script
-set scriptDate to (current date) -- get current date
-set elasped_baseDate to scriptDate - (DATE_PAST_OFFSET * days) -- elapsed time is currentDate - (playedDate + pastOffset) = (currentDate - pastOffset) - playedDate
+property scriptDate : (current date) -- get current date
+property elapsed_baseDate : scriptDate - (DATE_PAST_OFFSET * days) -- elapsed time is currentDate - (playedDate + pastOffset) = (currentDate - pastOffset) - playedDate
 
 
 
@@ -43,7 +43,7 @@ set elasped_baseDate to scriptDate - (DATE_PAST_OFFSET * days) -- elapsed time i
 
 
 -- function to compute rating corresponding to time since last attempt
-on CalcElaspedEquivRating(attempted_date, last_attempted_date)
+on CalcElapsedEquivRating(attempted_date, last_attempted_date)
 	
 	-- compute time since last attempt
 	set unadj_lastDate to last_attempted_date + (DATE_PAST_OFFSET * days) -- add back in past-shifitng date offset
@@ -61,7 +61,7 @@ on CalcElaspedEquivRating(attempted_date, last_attempted_date)
 	
 	return attempted_rating
 	
-end CalcElaspedEquivRating
+end CalcElapsedEquivRating
 
 
 
@@ -90,11 +90,12 @@ on createSrcPlaylist(songs, r_weight)
 			
 			if track_index < track_count then
 				set thisTrack to best_track
-				display dialog (thisTrack as string)
-				-- set played_date to played date of thisTrack
+				using terms from application "iTunes"
+					set played_date to played date of thisTrack
+				end using terms from
 				set track_index to track_index + 1
 				set best_track to track_index of tracks
-				set best_pressure to (elasped_baseDate - played_date) * rating_weight
+				set best_pressure to (elapsed_baseDate - played_date) * rating_weight
 				
 				return thisTrack
 			else
@@ -112,9 +113,17 @@ on createSrcPlaylist(songs, r_weight)
 		set tracks to songs
 		set track_count to count of songs
 		set track_index to 1
-		set rating_weigth to r_weight
+		set rating_weight to r_weight
 		set best_track to item 1 of tracks
-		-- set best_pressure to (elasped_baseDate - played date of best_track) * rating_weight
+		using terms from application "iTunes"
+			set played_date to played date of best_track
+		end using terms from
+		
+		if (played_date as string) is equal to "missing value" then
+			set played_date to (current date)
+		end if
+		
+		set best_pressure to (elapsed_baseDate - played_date) * rating_weight
 		
 	end tell
 	
@@ -232,14 +241,6 @@ tell application "iTunes"
 		duplicate aTrack to playlist OUTPUT_PLAYLIST
 	end repeat
 	
-	
-	-- shuffle - this may not work, ran across it on Doug's Applescripts
-	-- tell playlist OUTPUT_PLAYLIST
-	-- repeat 5 times
-	-- set shuffle to false
-	-- set shuffle to true
-	-- 		end repeat
-	-- end tell
 	
 	set fixed indexing to old_i -- restore fixed indexing to original state
 	
