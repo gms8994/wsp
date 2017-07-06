@@ -154,10 +154,12 @@ tell application "iTunes"
 					end if
 				end if
 				
-				set adj_attempted_date to most_recent_attempt - (DATE_PAST_OFFSET * days)
+				if most_recent_attempt > modDateThresh then
+					set adj_attempted_date to most_recent_attempt - (DATE_PAST_OFFSET * days)
 				
-				set played date of aTrack to adj_attempted_date
-				set skipped date of aTrack to adj_attempted_date
+					set played date of aTrack to adj_attempted_date
+					set skipped date of aTrack to adj_attempted_date
+				end if
 				
 			end repeat
 			set fixed indexing to old_i
