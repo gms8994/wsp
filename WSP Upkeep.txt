@@ -31,7 +31,7 @@ property SKIPPED_FIRST_TIME_RATING : 90 -- since there's no time period the firs
 
 -- advanced control parameters; not much reason to adjust these
 property SONGS_TO_PROCESS : "WSP test" -- debugging temporary source playlist, change to "WSP todo" later
-property DATE_PAST_OFFSET : 365.25 * 9.0 -- amount to shift play and skip dates into the past, in days
+property DATE_PAST_OFFSET : 365.25 * 20.0 -- amount to shift play and skip dates into the past, in days
 
 
 
