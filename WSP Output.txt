@@ -76,7 +76,6 @@ on createSrcPlaylist(songs, r_weight)
 		property rating_weight : null -- rating weight for computing pressures; pressure ~ (time since last attempt) / (101 - rating)
 		property best_pressure : null -- highest pressure I've got
 		property best_track : null -- track with that highest pressure
-		property track_count : null -- number of tracks
 		
 		
 		-- what is the highest pressure song I've got?  May not need this if I can access fields directly.
@@ -88,13 +87,13 @@ on createSrcPlaylist(songs, r_weight)
 		-- get highest pressure track
 		on getTrack()
 			
-			if track_index < track_count then
+			if track_index < count of songs then
 				set thisTrack to best_track
+				set track_index to track_index + 1
+				set best_track to track_index of tracks
 				using terms from application "iTunes"
 					set played_date to played date of thisTrack
 				end using terms from
-				set track_index to track_index + 1
-				set best_track to track_index of tracks
 				set best_pressure to (elapsed_baseDate - played_date) * rating_weight
 				
 				return thisTrack
@@ -111,18 +110,12 @@ on createSrcPlaylist(songs, r_weight)
 	tell SrcPlaylist
 		
 		set tracks to songs
-		set track_count to count of songs
 		set track_index to 1
 		set rating_weight to r_weight
 		set best_track to item 1 of tracks
 		using terms from application "iTunes"
 			set played_date to played date of best_track
 		end using terms from
-		
-		if (played_date as string) is equal to "missing value" then
-			set played_date to (current date)
-		end if
-		
 		set best_pressure to (elapsed_baseDate - played_date) * rating_weight
 		
 	end tell
@@ -155,8 +148,7 @@ tell application "iTunes"
 	if ((exists user playlist UNTRIED_SONG_PLAYLIST) and ((count tracks) of user playlist UNTRIED_SONG_PLAYLIST is not 0)) then
 		set input to get every track of user playlist UNTRIED_SONG_PLAYLIST
 		if (input is not {}) then
-			
-			
+
 			-- iterate through tracks trhat have been played or skipped
 			repeat with aTrack in input
 				
@@ -170,7 +162,6 @@ tell application "iTunes"
 			
 		end if
 	end if
-	
 	
 	
 	-- now add rest of songs
@@ -236,7 +227,7 @@ tell application "iTunes"
 	end if
 	
 	
-	-- write spongs to output playlist
+	-- write songs to output playlist
 	repeat with aTrack in chosen_songs
 		duplicate aTrack to playlist OUTPUT_PLAYLIST
 	end repeat
