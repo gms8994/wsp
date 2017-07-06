@@ -32,8 +32,6 @@ property SKIPPED_FIRST_TIME_RATING : 90 -- since there's no time period the firs
 -- advanced control parameters; not much reason to adjust these
 property SONGS_TO_PROCESS : "WSP test" -- debugging temporary source playlist, change to "WSP todo" later
 property DATE_PAST_OFFSET : 365.25 * 9.0 -- amount to shift play and skip dates into the past, in days
-property BLANK_DATE : date "Monday, January 1, 1990 at 12:00:00 AM" -- date cutoff that indicates a track's date field is blank (shows as a date far in the past)
-
 
 
 
@@ -91,13 +89,23 @@ tell application "iTunes"
 				-- fetch track attempt date info
 				set pDate to played date of aTrack
 				set sDate to skipped date of aTrack
+				
+	
+				if (pDate as string) is equal to "missing value" then
 
-				if pDate > modDateThresh then -- song was played
+					if (sDate as string) is equal to "missing value" then
 					
-					if sDate < BLANK_DATE then -- first attempt, played!
-						
-						set rating of aTrack to PLAYED_FIRST_TIME_RATING
-						
+						display dialog "Both play and skip dates were missing! Invalid case!"
+					else
+						set rating of aTrack to SKIPPED_FIRST_TIME_RATING     -- first attempt, skipped!
+					end if
+
+				else if pDate > modDateThresh then -- song was played
+					
+					if (sDate as string) is equal to "missing value" then
+					
+						set rating of aTrack to PLAYED_FIRST_TIME_RATING	-- first attempt, played!
+
 					else if sDate ≤ modDateThresh then -- legit play
 						
 						set new_r to CalcElaspedEquivRating(pDate, sDate) of me -- compute rating corresponding to time since last attempt
@@ -117,41 +125,36 @@ tell application "iTunes"
 					
 				else -- song was skipped
 					
-					if pDate < BLANK_DATE then -- first attempt, skipped!
-						
-						set rating of aTrack to SKIPPED_FIRST_TIME_RATING
-						
-					else -- legit skip
-						
-						set new_r to CalcElaspedEquivRating(sDate, pDate) of me -- compute rating corresponding to time since last attempt
-						set attempted_rating to new_r
-						
-						-- if worse than current, decrease rating
-						set r to rating of aTrack
-						
-						if attempted_rating < r then
-							
-							set new_r to round (r + (new_r - r) * SKIP_LEARN_RATE)
-							set rating of aTrack to new_r
-							
-						end if
-						
-					end if
+					-- if skipped date is missing here but the played date was processed to be in the past, that's a bug! Will fail here.
 					
+					set new_r to CalcElaspedEquivRating(sDate, pDate) of me -- compute rating corresponding to time since last attempt
+					set attempted_rating to new_r
+						
+					-- if worse than current, decrease rating
+					set r to rating of aTrack
+						
+					if attempted_rating < r then
+							
+						set new_r to round (r + (new_r - r) * SKIP_LEARN_RATE)
+						set rating of aTrack to new_r
+							
+					end if
+
 				end if
 				
 				
-				-- reset played and skipped dates
-				set most_recent_attempt to pDate
-				if sDate > most_recent_attempt then
+				-- reset play and skipped dates
+				set most_recent_attempt to pdate
+
+				if (pDate as string) is equal to "missing value" then       -- one of the dates must be valid or it's a bug! Checked for earlier.
 					set most_recent_attempt to sDate
+				else if (sDate as string) is not equal to "missing value" then
+					if sDate > most_recent_attempt then
+						set most_recent_attempt to sDate
+					end if
 				end if
 				
-				if (most_recent_attempt as string) is equal to "missing value" then
-					set adj_attempted_date to (current date) - (DATE_PAST_OFFSET * days)
-				else
-					set adj_attempted_date to most_recent_attempt - (DATE_PAST_OFFSET * days)
-				end if
+				set adj_attempted_date to most_recent_attempt - (DATE_PAST_OFFSET * days)
 				
 				set played date of aTrack to adj_attempted_date
 				set skipped date of aTrack to adj_attempted_date
