@@ -123,7 +123,7 @@ tell application "iTunes"
 						
 					end if
 					
-				else -- song was skipped
+				else if sDate > modDateThresh then -- song was skipped
 					
 					-- if skipped date is missing here but the played date was processed to be in the past, that's a bug! Will fail here.
 					
