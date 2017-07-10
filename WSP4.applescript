@@ -200,7 +200,7 @@ on UpdateTrackInfo(theTrack)
 			if rating of theTrack is equal to 0 then
 				
 				-- first attempt in the system, use default ratings
-				if play_date ³ skip_date then
+				if play_date >= skip_date then
 					set rating of track to PLAYED_FIRST_TIME_RATING
 				else
 					set rating of track to SKIPPED_FIRST_TIME_RATING
