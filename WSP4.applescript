@@ -123,7 +123,7 @@ on GetUntriedSongs(songs)
 			end if
 			
 			-- copy aTrack to the end of songs
-			set the end of songs to aTrack
+			copy aTrack to the end of songs
 			set list_size to list_size + song_size
 			
 		end repeat
