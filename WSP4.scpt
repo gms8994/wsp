@@ -34,13 +34,12 @@ property MISSING_VALUE_DATE : "1/1/1990"
 
 -- create date from iTunes value, checking if it is invalid and, if so, returning one far in the past instead to simplify comparisons
 on GetDate( itunes_date )
-{
 	if (itunes_date as string) is equal to "missing value" then
 		return date( MISSING_VALUE_DATE )
 	else
 		return itunes_date
 	end if
-}
+end GetDate
 
 
 
@@ -51,6 +50,7 @@ on createSong( track, last_attempted_date )
 		property itunes_track : null 								-- iTunes song
 		property size : null										-- size of song
 		property play_pressure : null								-- pressure for being played
+    end script
 		
 	-- constructor
 	tell Song
@@ -65,8 +65,9 @@ on createSong( track, last_attempted_date )
 		end using terms from
 		
 		set elapsed_time to currDate - last_attempted_date
-		set multiplier to RATING_REPEAT_INTERVAL * (101 - rating);	
+		set multiplier to RATING_REPEAT_INTERVAL * (101 - rating)
 		set play_pressure to elapsed_time / multiplier
+    end tell
 		
 	return Song
 
@@ -112,13 +113,14 @@ on GetUntriedSongs( songs )
 	tell application "iTunes"
 	
 		set input to get every track of user playlist UNTRIED_SONGS
-		repeat with track in input
+		repeat with aTrack in input
 			
-			set song_size to size of track
+			set song_size to size of aTrack
 			if size + song_size > untried_target_size
 				exit repeat
+            end if
 				
-			copy track to the end of songs
+			copy aTrack to the end of songs
 			set size to size + song_size
 				
 		end repeat
@@ -144,7 +146,9 @@ on GetLastAttemptedDate( track )
 			return null				-- keyword not found, return null
 		end if
 		
-		set last_attempted_date_string to text identLoc+9 thru identLoc+28 of com     	-- extract date from comment
+        set startPos to identLoc + 9
+        set endPos to identLoc + 28
+		set last_attempted_date_string to text startPos thru endPos of com     	-- extract date from comment
 		
 	end tell
 	
@@ -160,7 +164,8 @@ end GetLastAttemptedDate
 -- convert date into sortable date and time
 on DateToSortableString( date )
 
-	set sort_string to								-- TODO - needs Applescript date syntax specific code, ideally year / month / day / hour / minute / second so it'll sort but that's optional as is going all the way down to seconds
+    log date
+	-- set sort_string to								-- TODO - needs Applescript date syntax specific code, ideally year / month / day / hour / minute / second so it'll sort but that's optional as is going all the way down to seconds
 	
 	return sort_string
 
@@ -187,7 +192,7 @@ on UpdateTrackInfo( track )
 		if last_attempted_date equals null then
 		
 			-- if no rating already, set to default first time guess
-			 old_rating = track.rating;
+            set old_rating to rating of track
 			
 			if rating of track equals 0 then
 			
@@ -215,7 +220,7 @@ on UpdateTrackInfo( track )
 					-- compute rounded rating
 					set new_rating to 101 - elapsed_time / (3600 * 24 * RATING_REPEAT_INTERVAL)
 
-					set old_rating = rating of track
+					set old_rating to rating of track
 
 					if new_rating > old_rating then
 						set rating of track to round( old_rating + (new_rating - old_rating) * PLAY_LEARN_RATE )
@@ -226,7 +231,7 @@ on UpdateTrackInfo( track )
 			else
 			
 				-- skip, see if rating should be decreased
-				set elapsed_time = new_attempt_date - last_attempted_date
+				set elapsed_time to new_attempt_date - last_attempted_date
 
 				-- compute rounded rating
 				set new_rating to 101 - elapsed_time / (3600 * 24 * RATING_REPEAT_INTERVAL)
@@ -235,7 +240,7 @@ on UpdateTrackInfo( track )
 					set new_rating to 1
 				end if
 				
-				set old_rating = rating of track
+				set old_rating to rating of track
 
 				if new_rating < old_rating then
 					set rating of track to round( old_rating + (new_rating - old_rating) * SKIP_LEARN_RATE )
@@ -280,6 +285,7 @@ on GetHighestPressureSongs( chosen_tracks, all_songs, target_size )
 		set song_size to size of song
 		if size + song_size > target_size
 			exit repeat
+        end if
 			
 		copy itunes_track of song to the end of chosen_tracks
 		set size to size + song_size
@@ -298,13 +304,13 @@ on GetTriedSongs( chosen_tracks, target_size )
 	tell application "iTunes"
 		
 		set input to get every track of user playlist TRIED_SONGS
-		repeat with track in input
+		repeat with aTrack in input
 			
 			-- see if a play attempt has been made since last time script was run or if song is new to the music system
-			set last_attempted_date to UpdateTrackInfo( track ) of me
+			set last_attempted_date to UpdateTrackInfo( aTrack ) of me
 
 			-- create song object, which computes play pressure
-			set newSong to my createSong( track, last_attempted_date )
+			set newSong to my createSong( aTrack, last_attempted_date )
 			copy newSong to end of songs
 				
 		end repeat
