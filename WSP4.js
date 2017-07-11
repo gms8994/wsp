@@ -110,7 +110,7 @@ function GetUntriedSongs( songs )
 
 
 
-// extract last attempoted date from comment of traclk, returns null if none
+// extract last attempted date from comment of traclk, returns null if none
 function GetLastAttemptedDate( track )
 {
 	var com = track.Comment;
