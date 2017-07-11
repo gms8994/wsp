@@ -31,6 +31,10 @@ property UNTRIED_SONGS : "WSP4 Untried" -- songs that have never been attempted 
 property MISSING_VALUE_DATE : "1/1/1990"
 
 property TOTAL_SIZE_TARGET : OUTPUT_SIZE * 1024 * 1024
+property SONGS_TO_ADD : {}
+property PRESSURIZED_SONGS : {}
+property CURRENT_DATE : (current date) -- get current date
+
 
 
 
@@ -46,29 +50,49 @@ end GetDate
 
 
 -- song class, copntains play pressure information for tracks
-on createSong(track, last_attempted_date)
-	
+on createSong(theTrack, last_attempted_date)
 	script Song
 		property itunes_track : null -- iTunes song
-		property size : null -- size of song
+		property theSize : null -- size of song
+		property theRating : null -- rating of song
 		property play_pressure : null -- pressure for being played
+		
+		on getItunesTrack()
+			return itunes_track
+		end getItunesTrack
+		
+		on getPressure()
+			return play_pressure
+		end getPressure
+		
+		on getSize()
+			return theSize
+		end getSize
+		
+		on calculatePressure(theTrack, last_attempted_date)
+			
+			set itunes_track to theTrack
+			
+			using terms from application "iTunes"
+				
+				set theSize to size of theTrack
+				set theRating to rating of theTrack
+				
+			end using terms from
+			
+			set elapsed_time to CURRENT_DATE - last_attempted_date
+			set multiplier to RATING_REPEAT_INTERVAL * (101 - theRating)
+			set play_pressure to elapsed_time / multiplier
+			
+		end calculatePressure
+		
 	end script
 	
 	-- constructor
 	tell Song
 		
-		set itunes_track to track
+		calculatePressure(theTrack, last_attempted_date)
 		
-		using terms from application "iTunes"
-			
-			set size to size of track
-			set rating to rating of track
-			
-		end using terms from
-		
-		set elapsed_time to currDate - last_attempted_date
-		set multiplier to RATING_REPEAT_INTERVAL * (101 - rating)
-		set play_pressure to elapsed_time / multiplier
 	end tell
 	
 	return Song
@@ -78,7 +102,7 @@ end createSong
 
 
 -- write songs to output playlist
-on WriteSongs(output_songs)
+on WriteSongs()
 	
 	tell application "iTunes"
 		
@@ -91,10 +115,11 @@ on WriteSongs(output_songs)
 			make new user playlist with properties {name:OUTPUT_PLAYLIST_NAME}
 		end if
 		
-		
 		-- add tracks to output playlist
-		repeat with aTrack in output_songs
-			duplicate aTrack to playlist OUTPUT_PLAYLIST
+		repeat with aTrack in SONGS_TO_ADD
+			if name of aTrack as string is not "missing value" then
+				duplicate aTrack to playlist OUTPUT_PLAYLIST_NAME
+			end if
 		end repeat
 		
 	end tell
@@ -104,8 +129,7 @@ end WriteSongs
 
 
 -- get songs that have never been attempted before
-on GetUntriedSongs(songs)
-	
+on GetUntriedSongs()
 	-- compute amount of untried songs to add
 	set untried_target_size to TOTAL_SIZE_TARGET * UNTRIED_SONG_FRACTION
 	
@@ -122,8 +146,7 @@ on GetUntriedSongs(songs)
 				exit repeat
 			end if
 			
-			-- copy aTrack to the end of songs
-			copy aTrack to the end of songs
+			copy aTrack to the end of SONGS_TO_ADD
 			set list_size to list_size + song_size
 			
 		end repeat
@@ -150,7 +173,7 @@ on GetLastAttemptedDate(theTrack)
 		end if
 		
 		set startPos to identLoc + 9
-		set endPos to identLoc + 28
+		set endPos to count (com)
 		set last_attempted_date_string to text startPos thru endPos of com -- extract date from comment
 		
 	end tell
@@ -178,7 +201,6 @@ end DateToSortableString
 
 -- get last attempted date and update track rating based on plays & skips
 on UpdateTrackInfo(theTrack)
-	
 	tell application "iTunes"
 		
 		set play_date to GetDate(played date of theTrack) of me
@@ -200,7 +222,7 @@ on UpdateTrackInfo(theTrack)
 			if rating of theTrack is equal to 0 then
 				
 				-- first attempt in the system, use default ratings
-				if play_date >= skip_date then
+				if play_date ³ skip_date then
 					set rating of track to PLAYED_FIRST_TIME_RATING
 				else
 					set rating of track to SKIPPED_FIRST_TIME_RATING
@@ -265,7 +287,11 @@ end UpdateTrackInfo
 
 
 -- sort songs by decreasing play pressure
-on SortByPlayPressure(songs)
+on SortByPlayPressure()
+	
+	repeat with Song in PRESSURIZED_SONGS
+		log Song's getPressure()
+	end repeat
 	
 	-- sort songs
 	-- TODO need to sort the songs by play pressure, decreasing		
@@ -275,23 +301,23 @@ end SortByPlayPressure
 
 
 -- select the songs with the greatetst play pressure
-on GetHighestPressureSongs(chosen_tracks, all_songs, target_size)
+on GetHighestPressureSongs(chosen_tracks, target_size)
 	
 	-- sort songs by decreasing play pressure
-	SortByPlayPressure(all_songs) of me
+	SortByPlayPressure() of me
 	
 	-- add to selected tracks until target size is reached
-	set size to 0
+	set theSize to 0
 	
-	repeat with Song in all_songs
+	repeat with Song in PRESSURIZED_SONGS
 		
-		set song_size to size of Song
-		if size + song_size > target_size then
+		set song_size to Song's getSize()
+		if theSize + song_size > target_size then
 			exit repeat
 		end if
 		
-		copy itunes_track of Song to the end of chosen_tracks
-		set size to size + song_size
+		copy Song's getItunesTrack() to the end of chosen_tracks
+		set theSize to theSize + song_size
 		
 	end repeat
 	
@@ -301,8 +327,6 @@ end GetHighestPressureSongs
 
 -- get songs that have been attempted before, and process songs with new information
 on GetTriedSongs(chosen_tracks, target_size)
-	
-	set songs to {} -- array of song objects (has a play pressure for each)
 	
 	tell application "iTunes"
 		
@@ -314,14 +338,14 @@ on GetTriedSongs(chosen_tracks, target_size)
 			
 			-- create song object, which computes play pressure
 			set newSong to my createSong(aTrack, last_attempted_date)
-			copy newSong to end of songs
+			copy newSong to end of PRESSURIZED_SONGS
 			
 		end repeat
 		
 	end tell
 	
 	-- choose songs with the highest pressure for output
-	GetHighestPressureSongs(chosen_tracks, songs, target_size) of me
+	GetHighestPressureSongs(chosen_tracks, target_size) of me
 	
 end GetTriedSongs
 
@@ -329,15 +353,12 @@ end GetTriedSongs
 
 on GetSongsToAdd()
 	
-	set songs to {}
-	
+	set untried_size to 0
 	-- get untried songs (if any)
-	set untried_size to GetUntriedSongs(songs) of me
+	set untried_size to GetUntriedSongs() of me
 	
 	-- get tried songs to fill up rest of playlist, and process songs with new information
-	GetTriedSongs(songs, TOTAL_SIZE_TARGET - untried_size) of me
-	
-	return songs
+	GetTriedSongs(SONGS_TO_ADD, TOTAL_SIZE_TARGET - untried_size) of me
 	
 end GetSongsToAdd
 
@@ -350,16 +371,14 @@ end GetSongsToAdd
 
 tell application "iTunes"
 	
-	set currDate to (current date) -- get current date
-	
 	set old_i to fixed indexing -- enable fixed indexing
 	set fixed indexing to true
 	
 	-- get songs to be added to output playlist, updating attempted and new ones in the process
-	set output_songs to GetSongsToAdd() of me
+	GetSongsToAdd() of me
 	
 	-- write songs to output playlist
-	WriteSongs(output_songs) of me
+	WriteSongs() of me
 	
 	set fixed indexing to old_i
 	
