@@ -101,7 +101,7 @@ function GetUntriedSongs( songs )
 			size += song_size;
 		}
 		catch( er )
-        {
+	}
 	
 	return size;
 }
@@ -286,7 +286,7 @@ function GetTriedSongs( chosen_tracks, target_size )
 			songs.push( newSong );
 		}
 		catch( er )
-        {
+	}
 
 	// choose songs with the highest pressure for output
 	GetHighestPressureSongs( chosen_tracks, songs, target_size );
