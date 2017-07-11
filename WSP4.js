@@ -102,8 +102,6 @@ function GetUntriedSongs( songs )
 		}
 		catch( er )
         {
-        }
-	}
 	
 	return size;
 }
