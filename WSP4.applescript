@@ -223,9 +223,9 @@ on UpdateTrackInfo(theTrack)
 				
 				-- first attempt in the system, use default ratings
 				if play_date ³ skip_date then
-					set rating of track to PLAYED_FIRST_TIME_RATING
+					set rating of theTrack to PLAYED_FIRST_TIME_RATING
 				else
-					set rating of track to SKIPPED_FIRST_TIME_RATING
+					set rating of theTrack to SKIPPED_FIRST_TIME_RATING
 				end if
 			end if
 			
@@ -284,21 +284,24 @@ on UpdateTrackInfo(theTrack)
 	
 end UpdateTrackInfo
 
-
+on pressure_sort(my_list)
+	repeat with i from 1 to (count of my_list) - 1
+		repeat with j from i + 1 to count of my_list
+			if item j's getPressure() of my_list < item i's getPressure() of my_list then
+				set temp to item i of my_list
+				set item i of my_list to item j of my_list
+				set item j of my_list to temp
+			end if
+		end repeat
+	end repeat
+	
+	return my_list
+end pressure_sort
 
 -- sort songs by decreasing play pressure
 on SortByPlayPressure()
-	
-	repeat with Song in PRESSURIZED_SONGS
-		log Song's getPressure()
-	end repeat
-	
-	-- sort songs
-	-- TODO need to sort the songs by play pressure, decreasing		
-	
+	set PRESSURIZED_SONGS to reverse of pressure_sort(PRESSURIZED_SONGS)
 end SortByPlayPressure
-
-
 
 -- select the songs with the greatetst play pressure
 on GetHighestPressureSongs(chosen_tracks, target_size)
