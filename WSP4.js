@@ -303,7 +303,7 @@ function GetSongsToAdd()
 	var songs = [];
 	
 	// get untried songs (if any)
-	var untried_size = 0; // GetUntriedSongs( songs );
+	var untried_size = GetUntriedSongs( songs );
 	
 	// get tried songs to fill up rest of playlist, and process songs with new information
 	GetTriedSongs( songs, OUTPUT_SIZE - untried_size );
