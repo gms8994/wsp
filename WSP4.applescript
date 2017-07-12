@@ -161,16 +161,17 @@ on GetUntriedSongs()
 		set input to get every track of user playlist UNTRIED_SONGS
 		repeat with aTrack in input
 			
-		set song_size to size of aTrack
-		if (song_size as string) is equal to "missing value" then
-			set song_size to 0
-		end if
+			set song_size to size of aTrack
+			if (song_size as string) is equal to "missing value" then
+				set song_size to 0
+			end if
 			
 			if list_size + song_size > untried_target_size then
 				exit repeat
 			end if
 			
-			copy aTrack to the end of SONGS_TO_ADD
+			set the end of SONGS_TO_ADD to aTrack
+			-- copy aTrack to the end of SONGS_TO_ADD
 			set list_size to list_size + song_size
 			
 		end repeat
@@ -308,27 +309,36 @@ on UpdateTrackInfo(theTrack)
 	
 end UpdateTrackInfo
 
-on pressure_sort(my_list)
-	repeat with i from 1 to (count of my_list) - 1
-		repeat with j from i + 1 to count of my_list
-			if item j's getPressure() of my_list < item i's getPressure() of my_list then
-				set temp to item i of my_list
-				set item i of my_list to item j of my_list
-				set item j of my_list to temp
-			end if
+on pressure_sort(array, leftEnd, rightEnd) -- Hoare's QuickSort Algorithm
+	script A
+		property L : array
+	end script
+	set {i, j} to {leftEnd, rightEnd}
+	set v to item ((leftEnd + rightEnd) div 2)'s getPressure() of A's L -- pivot in the middle
+	repeat while (j > i)
+		repeat while ((item i of A's L)'s getPressure() < v)
+			set i to i + 1
 		end repeat
+		repeat while ((item j of A's L)'s getPressure() > v)
+			set j to j - 1
+		end repeat
+		if (not i > j) then
+			tell A's L to set {item i, item j} to {item j, item i} -- swap
+			set {i, j} to {i + 1, j - 1}
+		end if
 	end repeat
-	
-	return my_list
+	if (leftEnd < j) then pressure_sort(A's L, leftEnd, j)
+	if (rightEnd > i) then pressure_sort(A's L, i, rightEnd)
 end pressure_sort
 
 -- sort songs by decreasing play pressure
 on SortByPlayPressure()
-	set PRESSURIZED_SONGS to reverse of pressure_sort(PRESSURIZED_SONGS)
+	pressure_sort(PRESSURIZED_SONGS, 1, count of PRESSURIZED_SONGS)
+	set PRESSURIZED_SONGS to reverse of PRESSURIZED_SONGS
 end SortByPlayPressure
 
 -- select the songs with the greatetst play pressure
-on GetHighestPressureSongs(chosen_tracks, target_size)
+on GetHighestPressureSongs(target_size)
 	
 	-- sort songs by decreasing play pressure
 	SortByPlayPressure() of me
@@ -347,7 +357,7 @@ on GetHighestPressureSongs(chosen_tracks, target_size)
 			exit repeat
 		end if
 		
-		copy Song's getItunesTrack() to the end of chosen_tracks
+		set the end of SONGS_TO_ADD to Song's getItunesTrack()
 		set theSize to theSize + song_size
 		
 	end repeat
@@ -357,7 +367,7 @@ end GetHighestPressureSongs
 
 
 -- get songs that have been attempted before, and process songs with new information
-on GetTriedSongs(chosen_tracks, target_size)
+on GetTriedSongs(target_size)
 	
 	tell application "iTunes"
 		
@@ -370,14 +380,14 @@ on GetTriedSongs(chosen_tracks, target_size)
 			-- create song object, which computes play pressure
 			set newSong to my createSong(aTrack, last_attempted_date)
 			
-			set beginning of PRESSURIZED_SONGS to newSong
+			set end of PRESSURIZED_SONGS to newSong
 			
 		end repeat
 		
 	end tell
 	
 	-- choose songs with the highest pressure for output
-	GetHighestPressureSongs(chosen_tracks, target_size) of me
+	GetHighestPressureSongs(target_size) of me
 	
 end GetTriedSongs
 
@@ -390,7 +400,7 @@ on GetSongsToAdd()
 	set untried_size to GetUntriedSongs() of me
 	
 	-- get tried songs to fill up rest of playlist, and process songs with new information
-	GetTriedSongs(SONGS_TO_ADD, TOTAL_SIZE_TARGET - untried_size) of me
+	GetTriedSongs(TOTAL_SIZE_TARGET - untried_size) of me
 	
 end GetSongsToAdd
 
