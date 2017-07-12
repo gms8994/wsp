@@ -18,7 +18,7 @@
 -- user control parameters
 property OUTPUT_PLAYLIST_NAME : "WSP output" -- name of playlist to add output songs to
 property OUTPUT_SIZE : 950 -- desired size, in MB of output playlist (will always be smaller than this limit)
-property UNTRIED_SONG_FRACTION : 0.1 -- fraction of output to set to untried songs (if not enough tried ones, this could be larger)
+property UNTRIED_SONG_FRACTION : 0.3 -- fraction of output to set to untried songs (if not enough tried ones, this could be larger)
 property RATING_REPEAT_INTERVAL : 7 -- repeat interval, in days, per rating tick (r = 100: 1 * interval, r = 99: 2 * interval, etc.   r = 1: 100 * interval, note r = 0 means unrated )
 property SKIP_LEARN_RATE : 0.9 -- when skipped, new rating is set to old_rating + (new_rating-old_rating) * skip_learn_rate
 property PLAY_LEARN_RATE : 0.3 -- when played, new rating is set to old_rating + (new_rating-old_rating) * play_learn_rate
@@ -26,7 +26,7 @@ property PLAYED_FIRST_TIME_RATING : 100 -- since there's no time period the firs
 property SKIPPED_FIRST_TIME_RATING : 90 -- since there's no time period the first time a song is attempted, what rating do I use if it's skipped?
 
 -- advanced control parameters; not much reason to adjust these
-property TRIED_SONGS : "WSP test" -- Change to "WSP4 Tried" after debugging				-- playlist of songs with previous attempts (play & skip dates give us soemthing to work with)
+property TRIED_SONGS : "WSP4 Tried" -- Change to "WSP4 Tried" after debugging				-- playlist of songs with previous attempts (play & skip dates give us soemthing to work with)
 property UNTRIED_SONGS : "WSP4 Untried" -- songs that have never been attempted (no play & skip dates)
 property MISSING_VALUE_DATE : "1900-01-01 00:00:00"
 
@@ -122,8 +122,6 @@ on createSong(theTrack, last_attempted_date)
 	
 end createSong
 
-
-
 -- write songs to output playlist
 on WriteSongs()
 	
@@ -148,7 +146,6 @@ on WriteSongs()
 	end tell
 	
 end WriteSongs
-
 
 
 -- get songs that have never been attempted before
@@ -297,7 +294,7 @@ on UpdateTrackInfo(theTrack)
 			end if
 			
 			-- write new attemtped date
-			set comment of theTrack to "WSP LAD: " & new_attempt_date of me
+			set comment of theTrack to "WSP LAD: " & new_attempt_date
 			
 		end if
 		
@@ -338,6 +335,10 @@ on GetHighestPressureSongs(chosen_tracks, target_size)
 	repeat with Song in PRESSURIZED_SONGS
 		
 		set song_size to Song's getSize()
+		if (song_size as string) is equal to "missing value" then
+			set song_size to 0
+		end if
+		
 		if theSize + song_size > target_size then
 			exit repeat
 		end if
