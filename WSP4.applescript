@@ -309,6 +309,7 @@ on UpdateTrackInfo(theTrack)
 	
 end UpdateTrackInfo
 
+-- http://macscripter.net/viewtopic.php?pid=59460#p59460
 on pressure_sort(array, leftEnd, rightEnd) -- Hoare's QuickSort Algorithm
 	script A
 		property L : array
