@@ -28,7 +28,7 @@ property SKIPPED_FIRST_TIME_RATING : 90 -- since there's no time period the firs
 -- advanced control parameters; not much reason to adjust these
 property TRIED_SONGS : "WSP test" -- Change to "WSP4 Tried" after debugging				-- playlist of songs with previous attempts (play & skip dates give us soemthing to work with)
 property UNTRIED_SONGS : "WSP4 Untried" -- songs that have never been attempted (no play & skip dates)
-property MISSING_VALUE_DATE : "1/1/1990"
+property MISSING_VALUE_DATE : "1900-01-01 00:00:00"
 
 property TOTAL_SIZE_TARGET : OUTPUT_SIZE * 1024 * 1024
 property SONGS_TO_ADD : {}
@@ -41,13 +41,32 @@ property CURRENT_DATE : (current date) -- get current date
 -- create date from iTunes value, checking if it is invalid and, if so, returning one far in the past instead to simplify comparisons
 on GetDate(itunes_date)
 	if (itunes_date as string) is equal to "missing value" then
-		return date (MISSING_VALUE_DATE)
+		return my convertDate(MISSING_VALUE_DATE)
 	else
 		return itunes_date
 	end if
 end GetDate
 
-
+-- Convert date function. Call with string in YYYY-MM-DD HH:MM:SS format (time part optional)
+to convertDate(textDate)
+	set resultDate to the current date
+	
+	set the year of resultDate to (text 1 thru 4 of textDate)
+	set the month of resultDate to (text 6 thru 7 of textDate)
+	set the day of resultDate to (text 9 thru 10 of textDate)
+	set the time of resultDate to 0
+	
+	if (length of textDate) > 10 then
+		set the hours of resultDate to (text 12 thru 13 of textDate)
+		set the minutes of resultDate to (text 15 thru 16 of textDate)
+		
+		if (length of textDate) > 16 then
+			set the seconds of resultDate to (text 18 thru 19 of textDate)
+		end if
+	end if
+	
+	return resultDate
+end convertDate
 
 -- song class, copntains play pressure information for tracks
 on createSong(theTrack, last_attempted_date)
@@ -60,6 +79,10 @@ on createSong(theTrack, last_attempted_date)
 		on getItunesTrack()
 			return itunes_track
 		end getItunesTrack
+		
+		on getName()
+			return name of itunes_track
+		end getName
 		
 		on getPressure()
 			return play_pressure
@@ -230,7 +253,7 @@ on UpdateTrackInfo(theTrack)
 			end if
 			
 			-- no stored last attempted date, write new one
-			set comment of theTrack to "WSP LAD: " & DateToSortableString(new_attempt_date) of me
+			set comment of theTrack to "WSP LAD: " & new_attempt_date
 			
 		else if new_attempt_date > last_attempted_date then
 			
@@ -274,7 +297,7 @@ on UpdateTrackInfo(theTrack)
 			end if
 			
 			-- write new attemtped date
-			set comment of theTrack to "WSP LAD: " & DateToSortableString(new_attempt_date) of me
+			set comment of theTrack to "WSP LAD: " & new_attempt_date of me
 			
 		end if
 		
@@ -341,7 +364,8 @@ on GetTriedSongs(chosen_tracks, target_size)
 			
 			-- create song object, which computes play pressure
 			set newSong to my createSong(aTrack, last_attempted_date)
-			copy newSong to end of PRESSURIZED_SONGS
+			
+			set beginning of PRESSURIZED_SONGS to newSong
 			
 		end repeat
 		
