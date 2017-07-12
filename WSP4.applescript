@@ -161,7 +161,11 @@ on GetUntriedSongs()
 		set input to get every track of user playlist UNTRIED_SONGS
 		repeat with aTrack in input
 			
-			set song_size to size of aTrack
+		set song_size to size of aTrack
+		if (song_size as string) is equal to "missing value" then
+			set song_size to 0
+		end if
+			
 			if list_size + song_size > untried_target_size then
 				exit repeat
 			end if
