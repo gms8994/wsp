@@ -4,7 +4,7 @@
 
 1. Import the XML playlist `WSP4 Smart Playlists.xml` to iTunes.
 	* Update `WSP4 Untried` and `WSP4 Tried` to point to the playist `WSP4 Filter`.
-2. Run WSP4.applescript
+2. Run WSP4.applescript (or WSP4.js if you're on Windows)
     * You can do this via the commandline `osascript WSP4.applescript`
     * Or you can open it with `Script Editor` and execute there
 3. Bask in the glory of the newly created `WSP output` playlist.
